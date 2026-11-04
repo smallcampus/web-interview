@@ -102,3 +102,11 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--prima
 .qty { display: flex; align-items: center; gap: 4px; }
 .total { display: flex; justify-content: space-between; font-size: 1.2rem; padding: 12px 0; }
 .checkout { width: 100%; padding: 14px; }
+
+.shipping-form { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; flex: 1; font-size: 0.9rem; }
+.field input, .field select { width: 100%; }
+.field-error { color: var(--danger); font-size: 0.8rem; }
+.row { display: flex; gap: 12px; }
+.form-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.form-actions button[type='submit'] { flex: 1; }
