@@ -1,18 +1,29 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { checkout } from '../api/products.js'
 import { useCart } from '../context/CartContext.jsx'
 import { formatPrice } from '../utils/format.js'
+import ShippingForm from './ShippingForm.jsx'
+
+function loadShipping() {
+  try {
+    return JSON.parse(localStorage.getItem('shipping')) ?? undefined
+  } catch {
+    return undefined
+  }
+}
 
 export default function Cart({ open, onClose }) {
   const { items, total, setQuantity, removeItem, clear } = useCart()
   const [status, setStatus] = useState({ state: 'idle' })
+  const [step, setStep] = useState('cart')
 
-  const handleCheckout = async () => {
+  const placeOrder = async (shipping) => {
     setStatus({ state: 'loading' })
     try {
-      const receipt = await checkout(items)
+      const receipt = await checkout(items, shipping)
+      localStorage.setItem('shipping', JSON.stringify(shipping))
       clear()
-      setStatus({ state: 'success', orderId: receipt.orderId })
+      setStatus({ state: 'success', orderId: receipt.orderId, shipTo: receipt.shipTo })
     } catch (err) {
       setStatus({ state: 'error', message: err.message })
     }
@@ -23,20 +34,39 @@ export default function Cart({ open, onClose }) {
     onClose()
   }
 
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e) => e.key === 'Escape' && close()
+    window.addEventListener('keydown', onKey)
+  }, [open])
+
   if (!open) return null
 
   return (
     <div className="overlay" onClick={close}>
       <aside className="drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Shopping cart">
         <div className="drawer-header">
-          <h2>Your cart</h2>
+          <h2>{step === 'shipping' ? 'Shipping details' : 'Your cart'}</h2>
           <button className="ghost" onClick={close} aria-label="Close cart">✕</button>
         </div>
 
         {status.state === 'success' ? (
-          <p className="success">🎉 Order {status.orderId} placed. Thank you!</p>
-        ) : items.length === 0 ? (
+          <p className="success">
+            🎉 Order {status.orderId} placed. We'll ship it to {status.shipTo}. Thank you!
+          </p>
+        ) : items.length === 0 && step === 'cart' ? (
           <p className="empty">Your cart is empty.</p>
+        ) : step === 'shipping' ? (
+          <>
+            {status.state === 'error' && <p className="error">{status.message}</p>}
+            <ShippingForm
+              initialValues={loadShipping()}
+              submitLabel={status.state === 'loading' ? 'Processing…' : `Pay ${formatPrice(total)}`}
+              disabled={status.state === 'loading'}
+              onSubmit={placeOrder}
+              onBack={() => setStep('cart')}
+            />
+          </>
         ) : (
           <>
             <ul className="cart-items">
@@ -67,9 +97,8 @@ export default function Cart({ open, onClose }) {
               <span>Total</span>
               <strong>{formatPrice(total)}</strong>
             </div>
-            {status.state === 'error' && <p className="error">{status.message}</p>}
-            <button className="checkout" disabled={status.state === 'loading'} onClick={handleCheckout}>
-              {status.state === 'loading' ? 'Processing…' : 'Checkout'}
+            <button className="checkout" onClick={() => setStep('shipping')}>
+              Continue to shipping
             </button>
           </>
         )}

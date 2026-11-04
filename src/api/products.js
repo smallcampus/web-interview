@@ -21,13 +21,15 @@ export async function fetchProducts() {
 }
 
 // Mock checkout: validates stock and returns an order receipt.
-export async function checkout(items) {
+export async function checkout(items, shipping) {
   await delay(800)
+  console.log('Placing order', items, shipping)
+  if (!shipping) throw new Error('Shipping information is required')
   for (const item of items) {
     const product = PRODUCTS.find((p) => p.id === item.id)
     if (!product || product.stock < item.quantity) {
       throw new Error(`"${item.name}" is out of stock`)
     }
   }
-  return { orderId: `ORD-${Date.now().toString(36).toUpperCase()}`, itemCount: items.length }
+  return { orderId: `ORD-${Date.now().toString(36).toUpperCase()}`, itemCount: items.length, shipTo: shipping.city }
 }
