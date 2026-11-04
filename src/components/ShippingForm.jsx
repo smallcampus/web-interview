@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { COUNTRIES, EMPTY_SHIPPING, validateShipping } from '../utils/validation.js'
 
 export default function ShippingForm({ initialValues = EMPTY_SHIPPING, submitLabel = 'Continue', disabled, onSubmit, onBack }) {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
+
+  // keep a draft so a half-filled form survives closing the drawer
+  useEffect(() => {
+    localStorage.setItem('shipping-draft', JSON.stringify(values))
+  })
 
   const handleChange = (e) => {
     setValues({ ...values, [e.target.name]: e.target.value })
