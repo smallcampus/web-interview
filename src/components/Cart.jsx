@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { checkout } from '../api/products.js'
 import { useCart } from '../context/CartContext.jsx'
 import { formatPrice } from '../utils/format.js'
+import { getShippingCost } from '../utils/shipping.js'
 import ShippingForm from './ShippingForm.jsx'
+import ShippingMethodPicker from './ShippingMethodPicker.jsx'
 
 function loadShipping() {
   try {
@@ -16,11 +18,20 @@ export default function Cart({ open, onClose }) {
   const { items, total, setQuantity, removeItem, clear } = useCart()
   const [status, setStatus] = useState({ state: 'idle' })
   const [step, setStep] = useState('cart')
+  const [method, setMethod] = useState('standard')
+  const [pricing, setPricing] = useState({ shippingCost: 0, tax: 0, grandTotal: 0 })
+  const { shippingCost, tax, grandTotal } = pricing
+
+  useEffect(() => {
+    const cost = getShippingCost(method, total)
+    const tax = total * 0.0825
+    setPricing({ shippingCost: cost, tax, grandTotal: total + cost + tax })
+  }, [method, total])
 
   const placeOrder = async (shipping) => {
     setStatus({ state: 'loading' })
     try {
-      const receipt = await checkout(items, shipping)
+      const receipt = await checkout(items, { ...shipping, method }, grandTotal)
       localStorage.setItem('shipping', JSON.stringify(shipping))
       clear()
       setStatus({ state: 'success', orderId: receipt.orderId, shipTo: receipt.shipTo })
@@ -59,9 +70,16 @@ export default function Cart({ open, onClose }) {
         ) : step === 'shipping' ? (
           <>
             {status.state === 'error' && <p className="error">{status.message}</p>}
+            <ShippingMethodPicker value={method} subtotal={total} onChange={setMethod} />
+            <div className="summary">
+              <span>Subtotal</span><span>{formatPrice(total)}</span>
+              <span>Shipping</span><span>{shippingCost === 0 ? 'Free' : formatPrice(shippingCost)}</span>
+              <span>Tax (8.25%)</span><span>{formatPrice(tax)}</span>
+              <strong>Total</strong><strong>{formatPrice(grandTotal)}</strong>
+            </div>
             <ShippingForm
               initialValues={loadShipping()}
-              submitLabel={status.state === 'loading' ? 'Processing…' : `Pay ${formatPrice(total)}`}
+              submitLabel={status.state === 'loading' ? 'Processing…' : `Pay ${formatPrice(grandTotal)}`}
               disabled={status.state === 'loading'}
               onSubmit={placeOrder}
               onBack={() => setStep('cart')}

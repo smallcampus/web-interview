@@ -21,7 +21,7 @@ export async function fetchProducts() {
 }
 
 // Mock checkout: validates stock and returns an order receipt.
-export async function checkout(items, shipping) {
+export async function checkout(items, shipping, total) {
   await delay(800)
   console.log('Placing order', items, shipping)
   if (!shipping) throw new Error('Shipping information is required')
@@ -31,5 +31,5 @@ export async function checkout(items, shipping) {
       throw new Error(`"${item.name}" is out of stock`)
     }
   }
-  return { orderId: `ORD-${Date.now().toString(36).toUpperCase()}`, itemCount: items.length, shipTo: shipping.city }
+  return { orderId: `ORD-${Date.now().toString(36).toUpperCase()}`, itemCount: items.length, shipTo: shipping.city, charged: total }
 }
